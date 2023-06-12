@@ -25,7 +25,12 @@
 
 package main
 
-import "math/big"
+import (
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
+)
 
 func consistentChainIDTest(t *TestEnv) {
 	var (
@@ -40,4 +45,53 @@ func consistentChainIDTest(t *TestEnv) {
 	if expectedChainID.Cmp(cID) != 0 {
 		t.Fatalf("expected chain ID %d, got %d", expectedChainID, cID)
 	}
+}
+
+func eth_gasPriceTest(t *TestEnv) {
+
+	initialBaseFee := params.InitialBaseFee
+
+	gasPrice, err := t.Eth.SuggestGasPrice(t.Ctx())
+	if err != nil {
+		t.Fatalf("could not get gas price: %v", err)
+	}
+
+	if gasPrice.Cmp(big.NewInt(int64(initialBaseFee))) != 0 {
+		t.Fatalf("expected gas price %d, got %d", initialBaseFee, gasPrice)
+	}
+
+}
+
+func eth_blockNumberTest(t *TestEnv) {
+
+	_, err := t.Eth.BlockNumber(t.Ctx())
+
+	if err != nil {
+		t.Fatalf("could not get block number: %v", err)
+	}
+
+}
+func eth_getBalance(t *TestEnv) {
+
+	// fix
+	balance, err := t.Eth.BalanceAt(t.Ctx(), common.Address{}, nil)
+	if err != nil {
+		t.Fatalf("could not get balance: %v", err)
+	}
+	if balance.Cmp(big.NewInt(0)) != 0 {
+		t.Fatalf("expected balance 0, got %d", balance)
+	}
+
+}
+func eth_estimateGas(t *TestEnv) {
+
+}
+func deployContract(t *TestEnv) {
+
+}
+func interactWithContract(t *TestEnv) {
+
+}
+func eth_getTransactionByHash(t *TestEnv) {
+
 }
