@@ -6,7 +6,7 @@ replace github.com/ethereum/go-ethereum => github.com/berachain/polaris-geth v0.
 
 require (
 	github.com/ethereum/go-ethereum v1.12.0
-	github.com/ethereum/hive v0.0.0-20230603165725-f64d6ae89ba0
+	github.com/ethereum/hive v0.0.0-20230606214155-421537865d5f
 )
 
 require (

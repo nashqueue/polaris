@@ -5,6 +5,7 @@ use (
 	./cosmos
 	./e2e/hive/simulators/graphql
 	./e2e/hive/simulators/rpc
+	./e2e/hive/simulators/rpc-compat
 	./eth
 	./lib
 	./magefiles
