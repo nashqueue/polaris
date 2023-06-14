@@ -56,7 +56,7 @@ func buildTx(address common.Address, nonce uint64) (*coretypes.Transaction, erro
 
 // sendTx sends a transaction to the deadbeef address and returns its hash
 func sendTx(nonce uint64) (common.Hash, error) {
-	client, err := connectToClient("http://localhost:8545") // Replace with your Ethereum client URL
+	client, err := connectToClient("http://localhost:8545")
 	if err != nil {
 		panic(err)
 	}
@@ -120,7 +120,10 @@ func generateQueries() []RPCRequest {
 		   then when we stop the node, nuke the cache, and run again, these will all fail because no more cache and historical plugin gone
 
 		*/
-		request := RPCRequest{"2.0", "eth_getTransactionByHash", []interface{}{txHash.String()}, int64(id)}
+		blockByNumberRequest := RPCRequest{"2.0", "eth_getBlockByNumber", []interface{}{txHash.String()}, int64(id)}
+		blockByHashRequest := RPCRequest{"2.0", "eth_getBlockByHash", []interface{}{txHash.String()}, int64(id)}
+		transactionByHashRequest := RPCRequest{"2.0", "eth_getTransactionByHash", []interface{}{txHash.String()}, int64(id)}
+		receiptsByHashRequest := RPCRequest{"2.0", "eth_getReceiptsByHash", []interface{}{txHash.String()}, int64(id)}
 		requests = append(requests, request)
 	}
 

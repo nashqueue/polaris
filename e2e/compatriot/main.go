@@ -20,11 +20,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 const CACHED = "./e2e/compatriot/cached.json"
@@ -86,24 +89,45 @@ func main() {
 	}
 
 	// compare file 1 and file 2
-	diff := exec.Command("diff", CACHED, NONCACHED)
-	diff.Stdout = os.NewFile(3, diffFile)
-	if err := diff.Run(); err != nil {
-		switch err.(type) {
-		case *exec.ExitError:
-			// this is just an exit code error, no worries
-			// do nothing
-		default: //couldnt run diff
-			log.Fatalf("main: An error occurred %v when diffing\n", err)
-		}
-	}
 
-	// run sanity checks
-	if err := sanityCheck(CACHED); err != nil {
-		log.Fatalf("main: An error occurred %v when sanity checking cached file\n", err)
+	cachedContent, err := os.ReadFile(CACHED)
+	if err != nil {
+		log.Fatalf("main: An error occurred %v when reading cached file\n", err)
 	}
+	cachedContentStr := string(cachedContent)
 
-	if err := sanityCheck(NONCACHED); err != nil {
-		log.Fatalf("main: An error occurred %v when sanity checking non-cached file\n", err)
+	noncachedContent, err := os.ReadFile(NONCACHED)
+	if err != nil {
+		log.Fatalf("main: An error occurred %v when reading noncached file\n", err)
 	}
+	noncachedContentStr := string(noncachedContent)
+
+	dmp := diffmatchpatch.New()
+
+	diffs := dmp.DiffMain(cachedContentStr, noncachedContentStr, false)
+
+	fmt.Println(dmp.DiffPrettyText(diffs))
+
+	// diff := exec.Command("diff", CACHED, NONCACHED)
+	// diff.Stdout = os.NewFile(3, diffFile)
+	//
+	//	if err := diff.Run(); err != nil {
+	//		switch err.(type) {
+	//		case *exec.ExitError:
+	//			// this is just an exit code error, no worries
+	//			// do nothing
+	//		default: //couldnt run diff
+	//			log.Fatalf("main: An error occurred %v when diffing\n", err)
+	//		}
+	//	}
+	//
+	// // run sanity checks
+	//
+	//	if err := sanityCheck(CACHED); err != nil {
+	//		log.Fatalf("main: An error occurred %v when sanity checking cached file\n", err)
+	//	}
+	//
+	//	if err := sanityCheck(NONCACHED); err != nil {
+	//		log.Fatalf("main: An error occurred %v when sanity checking non-cached file\n", err)
+	//	}
 }
