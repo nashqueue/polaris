@@ -82,7 +82,6 @@ func sendTx(nonce uint64) (common.Hash, error) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("SENT TRANSACTIONS TO NETWORK")
 	return signedTx.Hash(), nil
 }
 
@@ -104,6 +103,7 @@ func submitTransactionsToNetwork() []common.Hash {
 		if err != nil {
 			panic(err)
 		}
+		fmt.Println("sent transaction to network", txHash)
 		txHashes = append(txHashes, txHash)
 	}
 	return txHashes
