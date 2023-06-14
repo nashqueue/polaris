@@ -124,7 +124,7 @@ func sendTx() (common.Hash, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	fmt.Println("SENT TRANSACTIONS TO NETWORK")
 	return signedTx.Hash(), nil
 }
 
