@@ -10,7 +10,6 @@ import (
 	coretypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/magefile/mage/sh"
 	"pkg.berachain.dev/polaris/eth/core/types"
 )
@@ -19,7 +18,6 @@ const POLARIS_RPC = "http://localhost:8545"
 const TESTS = "./tests.json"
 
 var client *ethclient.Client
-
 var txHashes []common.Hash
 
 // ConnectToClient connects to an Ethereum client and returns the client instance
@@ -31,50 +29,15 @@ func ConnectToClient(url string) (*ethclient.Client, error) {
 	return client, nil
 }
 
-// CreateAccount generates a new Ethereum account and returns the private key and address
-func createAccount() (*ecdsa.PrivateKey, common.Address, error) {
-	privateKey, err := crypto.GenerateKey()
-	if err != nil {
-		return nil, common.Address{}, err
-	}
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return nil, common.Address{}, fmt.Errorf("error casting public key to ECDSA")
-	}
-	address := crypto.PubkeyToAddress(*publicKeyECDSA)
-	return privateKey, address, nil
-}
-
 // SignTransaction signs the given transaction with the provided private key and returns the signed transaction object
 func signTransaction(tx *types.Transaction, privateKey *ecdsa.PrivateKey) (*types.Transaction, error) {
-	chainID, err := getChainID()
-	if err != nil {
-		return nil, err
-	}
 
-	signedTx, err := types.SignTx(tx, coretypes.NewEIP155Signer(chainID), privateKey)
+	signedTx, err := types.SignTx(tx, coretypes.NewEIP155Signer(big.NewInt(2061)), privateKey)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	return signedTx, nil
-}
-
-// getChainID retrieves the current chain ID from an Ethereum client
-func getChainID() (*big.Int, error) {
-	client, err := rpc.Dial("http://localhost:8545") // Replace with your Ethereum client URL
-	if err != nil {
-		return nil, err
-	}
-
-	var chainID *big.Int
-	err = client.CallContext(context.Background(), &chainID, "eth_chainId")
-	if err != nil {
-		return nil, err
-	}
-
-	return chainID, nil
 }
 
 // startPolarisChain starts the Polaris chain
@@ -82,12 +45,7 @@ func startPolarisChain() error {
 	return sh.RunV("./cosmos/init.sh")
 }
 
-func buildTx(address common.Address) (*coretypes.Transaction, error) {
-	// Build a transaction
-	nonce, err := client.PendingNonceAt(context.Background(), address)
-	if err != nil {
-		return nil, err
-	}
+func buildTx(address common.Address, nonce uint64) (*coretypes.Transaction, error) {
 
 	toAddress := common.HexToAddress("0x00000000000000000000000000000000DeaDBeef") // Replace with the recipient's Ethereum address
 	value := big.NewInt(1000000000000000000)                                       // 1 ETH in wei
@@ -99,29 +57,26 @@ func buildTx(address common.Address) (*coretypes.Transaction, error) {
 }
 
 // sendTx sends a transaction to the deadbeef address and returns its hash
-func sendTx() (common.Hash, error) {
+func sendTx(nonce uint64) (common.Hash, error) {
 	client, err := ConnectToClient("http://localhost:8545") // Replace with your Ethereum client URL
 	if err != nil {
 		panic(err)
 	}
 
-	// Create a new account
-	privateKey, address, err := createAccount()
-	if err != nil {
-		panic(err)
-	}
-
-	tx, err := buildTx(address)
+	tx, err := buildTx(common.HexToAddress("0x20f33CE90A13a4b5E7697E3544c3083B8F8A51D4"), nonce)
 	if err != nil {
 		panic(err)
 	}
 
 	// Sign the transaction
-	signedTx, err := signTransaction(tx, privateKey)
+	privKey, err := crypto.ToECDSA(common.Hex2Bytes("fffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306"))
 	if err != nil {
 		panic(err)
 	}
-
+	signedTx, err := signTransaction(tx, privKey)
+	if err != nil {
+		panic(err)
+	}
 	// Send the transaction
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
@@ -145,7 +100,7 @@ func setup() error {
 func submitTransactionsToNetwork() []common.Hash {
 	for i := 0; i < 100; i++ {
 
-		txHash, err := sendTx()
+		txHash, err := sendTx(uint64(i))
 		if err != nil {
 			panic(err)
 		}
@@ -154,7 +109,7 @@ func submitTransactionsToNetwork() []common.Hash {
 	return txHashes
 }
 
-func queryTheFkingChain() {
+func queryChain() {
 
 	for _, txHash := range txHashes {
 		/*
@@ -182,12 +137,12 @@ func queryTheFkingChain() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("txReceippt: ", txReceipt)
+		fmt.Println("txReceipt: ", txReceipt)
 	}
 }
 
 func main() {
 
 	submitTransactionsToNetwork()
-	queryTheFkingChain()
+	queryChain()
 }
