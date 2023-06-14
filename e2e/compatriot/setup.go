@@ -111,6 +111,7 @@ func submitTransactionsToNetwork() []common.Hash {
 
 func queryChain() {
 
+	client, _ := ConnectToClient("http://localhost:8545") // deadass this is dogshit
 	for _, txHash := range txHashes {
 		/*
 		   sendTx() returns hash of the send transaction
@@ -132,7 +133,8 @@ func queryChain() {
 		   then when we stop the node, nuke the cache, and run again, these will all fail because no more cache and historical plugin gone
 
 		*/
-		var txReceipt string
+		fmt.Println("txHash", txHash.String())
+		var txReceipt (string)
 		err := client.Client().CallContext(context.Background(), &txReceipt, "eth_getTransactionReceipt", txHash.String())
 		if err != nil {
 			panic(err)
