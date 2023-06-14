@@ -16,7 +16,6 @@ import (
 const POLARIS_RPC = "http://localhost:8545"
 const TESTS = "./e2e/compatriot/tests.json"
 
-var client *ethclient.Client
 var txHashes []common.Hash
 
 // setup starts up the chain and spams the transactions

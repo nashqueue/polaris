@@ -41,7 +41,7 @@ func Query(outputFile string) error {
 	for i := 0; i < len(calls); i++ {
 		result, err := call(calls[i])
 		if err != nil {
-			return fmt.Errorf("Query: An error occurred %v when calling\n", err)
+			return fmt.Errorf("Query: An error occurred %v when calling", err)
 		}
 		output = append(output, result)
 	}
@@ -49,11 +49,11 @@ func Query(outputFile string) error {
 	// add the results to a file and format
 	content, err := Marshal(output)
 	if err != nil {
-		return fmt.Errorf("Query: An error occurred %v when marshalling output\n", err)
+		return fmt.Errorf("Query: An error occurred %v when marshalling output", err)
 	}
 
 	if err = os.WriteFile("./"+outputFile, content, 0644); err != nil {
-		return fmt.Errorf("call: An error occurred %v when writing output\n", err)
+		return fmt.Errorf("call: An error occurred %v when writing output", err)
 	}
 
 	fmt.Println("finished querying")
@@ -67,7 +67,7 @@ func call(postRequest RPCRequest) (RPCOutput, error) {
 
 	body, err := makeRequest(POLARIS_RPC, buffer)
 	if err != nil {
-		return RPCOutput{}, fmt.Errorf("call: An error occurred %v when making the request\n", err)
+		return RPCOutput{}, fmt.Errorf("call: An error occurred %v when making the request", err)
 	}
 	var response RPCResponse
 	json.Unmarshal([]byte(body), &response)
@@ -79,13 +79,13 @@ func call(postRequest RPCRequest) (RPCOutput, error) {
 func makeRequest(rpc string, postBuffer *bytes.Buffer) (string, error) {
 	response, err := http.Post(rpc, "application/json", postBuffer)
 	if err != nil {
-		return "", fmt.Errorf("makeRequest: An Error Occured %v when posting\n", err)
+		return "", fmt.Errorf("makeRequest: An Error Occured %v when posting", err)
 	}
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return "", fmt.Errorf("makeRequest: An Error Occured %v when reading response\n", err)
+		return "", fmt.Errorf("makeRequest: An Error Occured %v when reading response", err)
 	}
 	return string(body), nil
 }
@@ -94,7 +94,7 @@ func makeRequest(rpc string, postBuffer *bytes.Buffer) (string, error) {
 func Marshal(output []RPCOutput) ([]byte, error) {
 	jsonOutput, err := json.MarshalIndent(output, "", "    ")
 	if err != nil {
-		return nil, fmt.Errorf("Marshal: An error occurred %v trying to marshal data\n", err)
+		return nil, fmt.Errorf("Marshal: An error occurred %v trying to marshal data", err)
 	}
 	return jsonOutput, nil
 }
