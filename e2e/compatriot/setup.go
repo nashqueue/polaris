@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -83,10 +82,11 @@ func startPolarisChain() error {
 	return sh.RunV("./cosmos/init.sh")
 }
 
-func buildTx(address common.Address) *coretypes.Transaction {
+func buildTx(address common.Address) (*coretypes.Transaction, error) {
 	// Build a transaction
 	nonce, err := client.PendingNonceAt(context.Background(), address)
 	if err != nil {
+		return nil, err
 	}
 
 	toAddress := common.HexToAddress("0x00000000000000000000000000000000DeaDBeef") // Replace with the recipient's Ethereum address
@@ -102,27 +102,30 @@ func buildTx(address common.Address) *coretypes.Transaction {
 func sendTx() (common.Hash, error) {
 	client, err := ConnectToClient("http://localhost:8545") // Replace with your Ethereum client URL
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	// Create a new account
 	privateKey, address, err := createAccount()
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	tx := buildTx(address)
+	tx, err := buildTx(address)
+	if err != nil {
+		panic(err)
+	}
 
 	// Sign the transaction
 	signedTx, err := signTransaction(tx, privateKey)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	// Send the transaction
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	fmt.Println("SENT TRANSACTIONS TO NETWORK")
 	return signedTx.Hash(), nil
@@ -144,7 +147,7 @@ func submitTransactionsToNetwork() []common.Hash {
 
 		txHash, err := sendTx()
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		txHashes = append(txHashes, txHash)
 	}
@@ -177,14 +180,14 @@ func queryTheFkingChain() {
 		var txReceipt string
 		err := client.Client().CallContext(context.Background(), &txReceipt, "eth_getTransactionReceipt", txHash.String())
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		fmt.Println("txReceippt: ", txReceipt)
 	}
 }
 
 func main() {
-	setup()
+
 	submitTransactionsToNetwork()
 	queryTheFkingChain()
 }
