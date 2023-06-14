@@ -10,18 +10,23 @@ import (
 	coretypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/magefile/mage/sh"
 	"pkg.berachain.dev/polaris/eth/core/types"
 )
 
 const POLARIS_RPC = "http://localhost:8545"
-const TESTS = "./tests.json"
+const TESTS = "./e2e/compatriot/tests.json"
 
 var client *ethclient.Client
 var txHashes []common.Hash
 
-// ConnectToClient connects to an Ethereum client and returns the client instance
-func ConnectToClient(url string) (*ethclient.Client, error) {
+// setup starts up the chain and spams the transactions
+func setup() error {
+	txHashes = submitTransactionsToNetwork()
+	return nil
+}
+
+// connectToClient connects to an Ethereum client and returns the client instance
+func connectToClient(url string) (*ethclient.Client, error) {
 	client, err := ethclient.Dial(url)
 	if err != nil {
 		return nil, err
@@ -40,11 +45,6 @@ func signTransaction(tx *types.Transaction, privateKey *ecdsa.PrivateKey) (*type
 	return signedTx, nil
 }
 
-// startPolarisChain starts the Polaris chain
-func startPolarisChain() error {
-	return sh.RunV("./cosmos/init.sh")
-}
-
 func buildTx(address common.Address, nonce uint64) (*coretypes.Transaction, error) {
 
 	toAddress := common.HexToAddress("0x00000000000000000000000000000000DeaDBeef") // Replace with the recipient's Ethereum address
@@ -53,12 +53,11 @@ func buildTx(address common.Address, nonce uint64) (*coretypes.Transaction, erro
 	data := []byte{}                                                               // Optional data for contract interactions
 
 	return coretypes.NewTransaction(nonce, toAddress, value, gasLimit, big.NewInt(0), data), nil
-
 }
 
 // sendTx sends a transaction to the deadbeef address and returns its hash
 func sendTx(nonce uint64) (common.Hash, error) {
-	client, err := ConnectToClient("http://localhost:8545") // Replace with your Ethereum client URL
+	client, err := connectToClient("http://localhost:8545") // Replace with your Ethereum client URL
 	if err != nil {
 		panic(err)
 	}
@@ -85,16 +84,6 @@ func sendTx(nonce uint64) (common.Hash, error) {
 	return signedTx.Hash(), nil
 }
 
-// setup starts up the chain and spams the transactions
-func setup() error {
-	// init the chain
-	// spam tx
-	if err := startPolarisChain(); err != nil {
-		return fmt.Errorf("failed to start the chain")
-	}
-	return nil
-}
-
 // submitTransactionsToNetwork submits transactions to the network and returns all the txHashes
 func submitTransactionsToNetwork() []common.Hash {
 	for i := 0; i < 100; i++ {
@@ -109,10 +98,9 @@ func submitTransactionsToNetwork() []common.Hash {
 	return txHashes
 }
 
-func queryChain() {
-
-	client, _ := ConnectToClient("http://localhost:8545") // deadass this is dogshit
-	for _, txHash := range txHashes {
+func generateQueries() []RPCRequest {
+	var requests []RPCRequest
+	for id, txHash := range txHashes {
 		/*
 		   sendTx() returns hash of the send transaction
 
@@ -133,18 +121,9 @@ func queryChain() {
 		   then when we stop the node, nuke the cache, and run again, these will all fail because no more cache and historical plugin gone
 
 		*/
-		fmt.Println("txHash", txHash.String())
-		var txReceipt (string)
-		err := client.Client().CallContext(context.Background(), &txReceipt, "eth_getTransactionReceipt", txHash.String())
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("txReceipt: ", txReceipt)
+		request := RPCRequest{"2.0", "eth_getTransactionByHash", []interface{}{txHash.String()}, int64(id)}
+		requests = append(requests, request)
 	}
-}
 
-func main() {
-
-	submitTransactionsToNetwork()
-	queryChain()
+	return requests
 }

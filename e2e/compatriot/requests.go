@@ -35,8 +35,7 @@ type RPCOutput struct {
 
 // Query loads prexisting JSON-RPC calls from a file and queries the chain
 func Query(outputFile string) error {
-	calls := make([]RPCRequest, 0)
-	loadCalls(&calls)
+	calls := generateQueries() // generates the queries according to the chain setup
 
 	var output []RPCOutput
 	for i := 0; i < len(calls); i++ {
@@ -58,21 +57,6 @@ func Query(outputFile string) error {
 	}
 
 	fmt.Println("finished querying")
-	return nil
-}
-
-func loadCalls(calls *[]RPCRequest) error {
-	jsonFile, err := os.Open(TESTS)
-	if err != nil {
-		return fmt.Errorf("loadCalls: An error occurred %v when opening TESTS\n", err)
-	}
-
-	byteValue, _ := io.ReadAll(jsonFile)
-
-	if err := json.Unmarshal(byteValue, calls); err != nil {
-		return fmt.Errorf("loadCalls: An error occurred %v when unmarshalling TESTS\n", err)
-	}
-
 	return nil
 }
 
@@ -108,7 +92,7 @@ func makeRequest(rpc string, postBuffer *bytes.Buffer) (string, error) {
 
 // Marshal marshals the output slice to JSON
 func Marshal(output []RPCOutput) ([]byte, error) {
-	jsonOutput, err := json.Marshal(output)
+	jsonOutput, err := json.MarshalIndent(output, "", "    ")
 	if err != nil {
 		return nil, fmt.Errorf("Marshal: An error occurred %v trying to marshal data\n", err)
 	}
