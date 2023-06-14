@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -52,7 +52,7 @@ func loadCalls(calls *[]RPCRequest) {
 		log.Fatalf("An error occurred %v", err)
 	}
 
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, _ := io.ReadAll(jsonFile)
 
 	json.Unmarshal(byteValue, calls)
 }
@@ -77,7 +77,7 @@ func makeRequest(rpc string, postBuffer *bytes.Buffer) string {
 	}
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}
