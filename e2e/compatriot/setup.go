@@ -19,11 +19,9 @@ import (
 const POLARIS_RPC = "http://localhost:8545"
 const TESTS = "./tests.json"
 
-var supportedMethods []string
-var possiblySupportedMethods []string
-var unsupportedMethods []string
-
 var client *ethclient.Client
+
+var txHashes []common.Hash
 
 // ConnectToClient connects to an Ethereum client and returns the client instance
 func ConnectToClient(url string) (*ethclient.Client, error) {
@@ -80,18 +78,23 @@ func getChainID() (*big.Int, error) {
 	return chainID, nil
 }
 
+// startPolarisChain starts the Polaris chain
 func startPolarisChain() error {
 	return sh.RunV("./cosmos/init.sh")
 }
 
-func setup() error {
-	// init the chain
-	// spam tx
-	err := startPolarisChain()
+func buildTx(address common.Address) *coretypes.Transaction {
+	// Build a transaction
+	nonce, err := client.PendingNonceAt(context.Background(), address)
 	if err != nil {
-		return fmt.Errorf("failed to start the chain")
 	}
-	return nil
+
+	toAddress := common.HexToAddress("0x00000000000000000000000000000000DeaDBeef") // Replace with the recipient's Ethereum address
+	value := big.NewInt(1000000000000000000)                                       // 1 ETH in wei
+	gasLimit := uint64(21000)                                                      // Standard gas limit for a simple transaction
+	data := []byte{}                                                               // Optional data for contract interactions
+
+	return coretypes.NewTransaction(nonce, toAddress, value, gasLimit, big.NewInt(0), data), nil
 
 }
 
@@ -108,18 +111,7 @@ func sendTx() (common.Hash, error) {
 		log.Fatal(err)
 	}
 
-	// Build a transaction
-	nonce, err := client.PendingNonceAt(context.Background(), address)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	toAddress := common.HexToAddress("0x00000000000000000000000000000000DeaDBeef") // Replace with the recipient's Ethereum address
-	value := big.NewInt(1000000000000000000)                                       // 1 ETH in wei
-	gasLimit := uint64(21000)                                                      // Standard gas limit for a simple transaction
-	data := []byte{}                                                               // Optional data for contract interactions
-
-	tx := coretypes.NewTransaction(nonce, toAddress, value, gasLimit, big.NewInt(0), data)
+	tx := buildTx(address)
 
 	// Sign the transaction
 	signedTx, err := signTransaction(tx, privateKey)
@@ -136,77 +128,63 @@ func sendTx() (common.Hash, error) {
 	return signedTx.Hash(), nil
 }
 
-// the following are all functions that the historical plugin implements
-// the historical plugin is disabled right now, so all of these work because of the cache
-// we will populate the cache, stop the node, nuke the caches, then see if these work over RPC (they won't)
-func GetBlockByNumber(number int64) (*types.Block, error) {
-	return client.BlockByNumber(context.Background(), big.NewInt(number))
-}
-func GetBlockByHash(hash common.Hash) (*types.Block, error) {
-	return client.BlockByHash(context.Background(), hash)
-}
-func GetTransactionByHash(hash common.Hash) (*types.Transaction, bool, error) {
-	return client.TransactionByHash(context.Background(), hash)
-}
-func GetReceiptsByHash(hash common.Hash) (*types.Receipt, error) {
-	return client.TransactionReceipt(context.Background(), hash)
+// setup starts up the chain and spams the transactions
+func setup() error {
+	// init the chain
+	// spam tx
+	if err := startPolarisChain(); err != nil {
+		return fmt.Errorf("failed to start the chain")
+	}
+	return nil
 }
 
-func submitTransactionsAndCheckHistoricalData() {
+// submitTransactionsToNetwork submits transactions to the network and returns all the txHashes
+func submitTransactionsToNetwork() []common.Hash {
 	for i := 0; i < 100; i++ {
 
 		txHash, err := sendTx()
 		if err != nil {
 			log.Fatal(err)
 		}
+		txHashes = append(txHashes, txHash)
+	}
+	return txHashes
+}
 
-		receipt, err := GetReceiptsByHash(txHash)
-		fmt.Println("log this output somewhere", receipt)
+func queryTheFkingChain() {
+
+	for _, txHash := range txHashes {
+		/*
+		   sendTx() returns hash of the send transaction
+
+		   GetReceiptsByHash() returns receipts of the transaction
+
+		   get BlockNumber and BlockHash from the Receipt
+
+		   Then call GetBlockByNumber() with the block number
+
+		   Then call GetBlockByHash() with the block hash
+
+		   Then call GetTransactionByHash() with the transaction hash
+
+		   Then call GetReceiptsByHash() with the transaction hash
+
+		   on the first run, these will all work beacuse of the cache
+
+		   then when we stop the node, nuke the cache, and run again, these will all fail because no more cache and historical plugin gone
+
+		*/
+		var txReceipt string
+		err := client.Client().CallContext(context.Background(), &txReceipt, "eth_getTransactionReceipt", txHash.String())
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		block, err := GetBlockByNumber(receipt.BlockNumber.Int64())
-
-		fmt.Println("log this output somewhere", block)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		block, err = GetBlockByHash(block.Hash())
-
-		fmt.Println("log this output somewhere", block)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tx, _, err := GetTransactionByHash(txHash)
-		fmt.Println("log this output somewhere", tx)
-		if err != nil {
-			log.Fatal(err)
-		}
-
+		fmt.Println("txReceippt: ", txReceipt)
 	}
 }
 
-/*
-
-sendTx() returns hash of the send transaction
-
-GetReceiptsByHash() returns receipts of the transaction
-
-get BlockNumber and BlockHash from the Receipt
-
-Then call GetBlockByNumber() with the block number
-
-Then call GetBlockByHash() with the block hash
-
-Then call GetTransactionByHash() with the transaction hash
-
-Then call GetReceiptsByHash() with the transaction hash
-
-on the first run, these will all work beacuse of the cache
-
-then when we stop the node, nuke the cache, and run again, these will all fail because no more cache and historical plugin gone
-
-*/
+func main() {
+	setup()
+	submitTransactionsToNetwork()
+	queryTheFkingChain()
+}

@@ -19,38 +19,33 @@
 // TITLE.
 package main
 
-import (
-	"log"
-
-	"github.com/magefile/mage/sh"
-)
-
 const CACHED = "./cached.json"
 const NONCACHED = "./noncached.json"
 
-func main() {
-	setup()
-
-	// make queries and save results to file 1
-	Query(CACHED)
-
-	// kill the chain
-
-	// make queries and save results to file 2
-	Query(NONCACHED)
-
-	// compare file 1 and file 2
-	err := sh.Run("diff", CACHED, NONCACHED)
-	if err != nil {
-		log.Fatalf("main: An error occurred %v when diffing\n", err)
-	}
-
-	// run sanity checks
-	if err := sanityCheck(CACHED); err != nil {
-		log.Fatalf("main: An error occurred %v when sanity checking cached file\n", err)
-	}
-
-	if err := sanityCheck(NONCACHED); err != nil {
-		log.Fatalf("main: An error occurred %v when sanity checking non-cached file\n", err)
-	}
-}
+//func main() {
+//	setup()
+//
+//	// make queries and save results to file 1
+//	Query(CACHED)
+//
+//	// kill the chain
+//
+//	// make queries and save results to file 2
+//	Query(NONCACHED)
+//
+//	// compare file 1 and file 2
+//	err := sh.Run("diff", CACHED, NONCACHED)
+//	if err != nil {
+//		log.Fatalf("main: An error occurred %v when diffing\n", err)
+//	}
+//
+//	// run sanity checks
+//	if err := sanityCheck(CACHED); err != nil {
+//		log.Fatalf("main: An error occurred %v when sanity checking cached file\n", err)
+//	}
+//
+//	if err := sanityCheck(NONCACHED); err != nil {
+//		log.Fatalf("main: An error occurred %v when sanity checking non-cached file\n", err)
+//	}
+//}
+//
