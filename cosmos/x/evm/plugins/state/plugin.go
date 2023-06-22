@@ -105,6 +105,7 @@ type plugin struct {
 
 	// keepers used for balance and account information.
 	ak AccountKeeper
+	bk BankKeeper
 
 	// getQueryContext allows for querying state a historical height.
 	getQueryContext func(height int64, prove bool) (sdk.Context, error)
@@ -119,12 +120,14 @@ type plugin struct {
 // NewPlugin returns a plugin with the given context and keepers.
 func NewPlugin(
 	ak AccountKeeper,
+	bk BankKeeper,
 	storeKey storetypes.StoreKey,
 	plf events.PrecompileLogFactory,
 ) Plugin {
 	return &plugin{
 		storeKey: storeKey,
 		ak:       ak,
+		bk:       bk,
 		plf:      plf,
 		mu:       sync.Mutex{},
 	}
@@ -513,7 +516,7 @@ func (p *plugin) StateAtBlockNumber(number uint64) (core.StatePlugin, error) {
 	}
 
 	// Create a State Plugin with the requested chain height.
-	sp := NewPlugin(p.ak, p.storeKey, p.plf)
+	sp := NewPlugin(p.ak, p.bk, p.storeKey, p.plf)
 	sp.Reset(ctx)
 	return sp, nil
 }
@@ -524,7 +527,7 @@ func (p *plugin) StateAtBlockNumber(number uint64) (core.StatePlugin, error) {
 
 // Clone implements libtypes.Cloneable.
 func (p *plugin) Clone() ethstate.Plugin {
-	sp := NewPlugin(p.ak, p.storeKey, p.plf)
+	sp := NewPlugin(p.ak, p.bk, p.storeKey, p.plf)
 	cacheCtx, _ := p.ctx.CacheContext()
 	sp.Reset(cacheCtx)
 	return sp

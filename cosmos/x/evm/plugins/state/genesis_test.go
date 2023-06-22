@@ -44,8 +44,9 @@ var _ = Describe("Genesis", func() {
 
 	BeforeEach(func() {
 		var ak state.AccountKeeper
-		ctx, ak, _, _ = testutil.SetupMinimalKeepers()
-		sp = state.NewPlugin(ak, testutil.EvmKey, nil)
+		var bk state.BankKeeper
+		ctx, ak, bk, _ = testutil.SetupMinimalKeepers()
+		sp = state.NewPlugin(ak, bk, testutil.EvmKey, nil)
 
 		// Create account for alice.
 		sp.Reset(ctx)

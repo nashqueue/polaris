@@ -37,8 +37,8 @@ var (
 )
 
 func GetNewStatePlugin() core.StatePlugin {
-	ctx, ak, _, _ := testutil.SetupMinimalKeepers()
-	sp := state.NewPlugin(ak, testutil.EvmKey, nil)
+	ctx, ak, bk, _ := testutil.SetupMinimalKeepers()
+	sp := state.NewPlugin(ak, bk, testutil.EvmKey, nil)
 	sp.Reset(ctx)
 	return sp
 }

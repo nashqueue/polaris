@@ -53,6 +53,7 @@ type DepInjectInput struct {
 	CustomPrecompiles func() *ethprecompile.Injector `optional:"true"`
 
 	AccountKeeper AccountKeeper
+	BankKeeper    BankKeeper
 	StakingKeeper StakingKeeper
 }
 
@@ -79,6 +80,7 @@ func ProvideModule(in DepInjectInput) DepInjectOutput {
 
 	k := keeper.NewKeeper(
 		in.AccountKeeper,
+		in.BankKeeper,
 		in.StakingKeeper,
 		in.Key,
 		authority.String(),

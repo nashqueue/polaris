@@ -67,8 +67,8 @@ var (
 var _ = Describe("EthTxPool", func() {
 
 	BeforeEach(func() {
-		sCtx, ak, _, _ := testutil.SetupMinimalKeepers()
-		sp = state.NewPlugin(ak, testutil.EvmKey, &mockPLF{})
+		sCtx, ak, bk, _ := testutil.SetupMinimalKeepers()
+		sp = state.NewPlugin(ak, bk, testutil.EvmKey, &mockPLF{})
 		ctx = sCtx
 		sp.Reset(ctx)
 		sp.SetNonce(addr1, 1)

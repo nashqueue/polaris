@@ -51,6 +51,7 @@ var _ = Describe("", func() {
 		ctx    sdk.Context
 		sc     ethprecompile.StatefulImpl
 		ak     state.AccountKeeper
+		bk     state.BankKeeper
 		sk     stakingkeeper.Keeper
 		k      *keeper.Keeper
 		ethGen *core.Genesis
@@ -60,11 +61,11 @@ var _ = Describe("", func() {
 
 	BeforeEach(func() {
 		ethGen = core.DefaultGenesis
-		ctx, ak, _, sk = testutil.SetupMinimalKeepers()
+		ctx, ak, bk, sk = testutil.SetupMinimalKeepers()
 		ctx = ctx.WithBlockHeight(0)
 		sc = staking.NewPrecompileContract(&sk)
 		k = keeper.NewKeeper(
-			ak, sk,
+			ak, bk, sk,
 			storetypes.NewKVStoreKey("evm"),
 			"authority",
 			evmmempool.NewPolarisEthereumTxPool(),

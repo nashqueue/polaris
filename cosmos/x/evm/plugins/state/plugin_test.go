@@ -44,12 +44,13 @@ var (
 
 var _ = Describe("State Plugin", func() {
 	var ak state.AccountKeeper
+	var bk state.BankKeeper
 	var ctx sdk.Context
 	var sp core.StatePlugin
 
 	BeforeEach(func() {
-		ctx, ak, _, _ = testutil.SetupMinimalKeepers()
-		sp = state.NewPlugin(ak, testutil.EvmKey, &mockPLF{})
+		ctx, ak, bk, _ = testutil.SetupMinimalKeepers()
+		sp = state.NewPlugin(ak, bk, testutil.EvmKey, &mockPLF{})
 		sp.Reset(ctx)
 	})
 
