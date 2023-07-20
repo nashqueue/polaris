@@ -24,26 +24,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/golang/mock/gomock"
-
-	storetypes "cosmossdk.io/store/types"
-
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	governancekeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	govtestutil "github.com/cosmos/cosmos-sdk/x/gov/testutil"
-	governancetypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-
-	"pkg.berachain.dev/polaris/cosmos/lib"
-	testutil "pkg.berachain.dev/polaris/cosmos/testing/utils"
-
 	//nolint:stylecheck,revive // Ginkgo is the testing framework.
 	. "github.com/onsi/ginkgo/v2"
 )
@@ -57,59 +38,6 @@ func (g GinkgoTestReporter) Errorf(format string, args ...interface{}) {
 
 func (g GinkgoTestReporter) Fatalf(format string, args ...interface{}) {
 	Fail(fmt.Sprintf(format, args...))
-}
-
-// Helper functions for setting up the tests.
-func Setup(ctrl *gomock.Controller, caller sdk.AccAddress) (sdk.Context, bankkeeper.Keeper, *governancekeeper.Keeper) {
-	// Setup the keepers and context.
-	ctx, ak, bk, sk := testutil.SetupMinimalKeepers()
-	dk := govtestutil.NewMockDistributionKeeper(ctrl)
-
-	// Create the codec.
-	encCfg := testutil.MakeTestEncodingConfig(
-		gov.AppModuleBasic{},
-		bank.AppModuleBasic{},
-	)
-
-	// Create the base app msgRouter.
-	msr := baseapp.NewMsgServiceRouter()
-
-	// Create the governance keeper.
-	gk := governancekeeper.NewKeeper(
-		encCfg.Codec,
-		runtime.NewKVStoreService(storetypes.NewKVStoreKey(governancetypes.StoreKey)),
-		ak,
-		bk,
-		sk,
-		dk,
-		msr,
-		governancetypes.DefaultConfig(),
-		authtypes.NewModuleAddress(governancetypes.ModuleName).String(),
-	)
-
-	// Register the msg Service Handlers.
-	msr.SetInterfaceRegistry(encCfg.InterfaceRegistry)
-	v1.RegisterMsgServer(msr, governancekeeper.NewMsgServerImpl(gk))
-	banktypes.RegisterMsgServer(msr, bankkeeper.NewMsgServerImpl(bk))
-
-	// Set the Params and first proposal ID.
-	params := v1.DefaultParams()
-	err := gk.Params.Set(ctx, params)
-	if err != nil {
-		panic(err)
-	}
-	// gk.SetProposalID(ctx, 1)
-
-	// Fund the caller with some coins.
-	err = lib.MintCoinsToAddress(
-		//nolint:gomnd // magic number is fine here.
-		ctx, bk, governancetypes.ModuleName, lib.AccAddressToEthAddress(caller), "abera", big.NewInt(100000000),
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	return ctx, bk, gk
 }
 
 func SdkCoinsToEvmCoins(sdkCoins sdk.Coins) []struct {
